@@ -1,6 +1,6 @@
 .TH ZZZRUN "8" "July 14, 2017" "zzzrun.sh" "System Administration Commands"
 .SH NAME
-zzzrun \- run command if ZFS pool has no sleeping disks
+zzzrun \- run command if ZFS pool has no sleeping hard drives
 .ds p zzzrun
 .ds t @zzzrun-pool
 .SH SYNOPSIS
@@ -11,7 +11,7 @@ zzzrun \- run command if ZFS pool has no sleeping disks
 .SH DESCRIPTION
 .B \*p
 checks the standby status of all rotational drives in a ZFS pool (using \fBhdparm -C\fR), and only if they are all active/idle runs the command supplied.
-Use this command to avoid spinning up drives unnecessarily.
+Use this utility to avoid spinning up drives unnecessarily.
 .SH OPTIONS
 .TP
 .B \-s
@@ -19,7 +19,8 @@ Single run.  By default \fB\*p\fR will check and execute on a per pool basis.
 This option will instead check all disks across all pools in scope and execute \fICOMMAND\fR just once if there are no disks in standby.
 .TP
 .B \-v
-Verbose mode.  Report warnings and information.
+Verbose mode.  Report warnings and information.  By default this
+utility will only report errors.
 .TP
 .B \-vv
 Very verbose.  Report debugging messages.

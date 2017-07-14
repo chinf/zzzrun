@@ -1,7 +1,7 @@
 # zzzrun
 *Run a command only if a ZFS pool has no hard drives in a standby state.*
 
-If all disks in the pool are active/idle then the command supplied will be executed. Use this command to avoid spinning up drives unnecessarily.
+If all disks in the pool are active/idle then the command supplied will be executed. Use this utility to avoid spinning up drives unnecessarily.
 
 Based on [durandalTR's zstandby script](https://github.com/zfsonlinux/pkg-zfs/issues/54) and [zfs-auto-snapshot](https://github.com/zfsonlinux/zfs-auto-snapshot).
 
