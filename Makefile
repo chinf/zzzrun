@@ -14,6 +14,7 @@ install:
 	install etc/zzzrun.cron.weekly   $(DESTDIR)/etc/cron.weekly/zzzrun
 	install etc/zzzrun.cron.monthly  $(DESTDIR)/etc/cron.monthly/zzzrun
 	install -d $(DESTDIR)$(PREFIX)/share/man/man8
-	install src/zzzrun.8 $(DESTDIR)$(PREFIX)/share/man/man8/zzzrun.8
+	install -m 0644 src/zzzrun.8 $(DESTDIR)$(PREFIX)/share/man/man8/zzzrun.8
+	gzip $(DESTDIR)$(PREFIX)/share/man/man8/zzzrun.8
 	install -d $(DESTDIR)$(PREFIX)/bin
 	install src/zzzrun.sh $(DESTDIR)$(PREFIX)/bin/zzzrun
