@@ -3,7 +3,7 @@
 
 If all disks in the pool are active/idle then the command supplied will be executed. Use this command to avoid spinning up drives unnecessarily.
 
-Derived from durandalTR's zstandby script at https://github.com/zfsonlinux/pkg-zfs/issues/54
+Based on [durandalTR's zstandby script](https://github.com/zfsonlinux/pkg-zfs/issues/54) and [zfs-auto-snapshot](https://github.com/zfsonlinux/zfs-auto-snapshot).
 
 Depends on the standard ZFS utilities and hdparm. Currently implementated in bash shell.
 
