@@ -29,12 +29,12 @@ SUBSTOKEN="@zzzrun-pool"
 VERBOSITY=0
 
 print_usage() {
-  echo "Usage: $0 [options] [-p POOL]... COMMAND [${SUBSTOKEN}]
+  echo "Usage: $0 [options] [-p POOL]... COMMAND [${SUBSTOKEN}] ...
 Run a command only if a ZFS pool has no hard drives in standby.
 If all disks in the pool are active/idle then the command supplied will be
 executed.  Use this command to avoid spinning up drives unnecessarily.
 
-  -s           Single mode.  By default zzzrun will check and execute on a
+  -s           Single run.  By default zzzrun will check and execute on a
                per pool basis.  This option will instead check all disks
                across all pools in scope and execute COMMAND just once if
                there are no disks in standby.
@@ -49,12 +49,12 @@ executed.  Use this command to avoid spinning up drives unnecessarily.
                will be ignored.
 
   COMMAND      Command to execute.
-               Include the token ${SUBSTOKEN} in the argument string to
-               have zzzrun substitute in the current pool scope when
-               running the command.  For the default operation mode this
-               will be name of each pool as zzzrun iterates through them.
-               If single mode is specified, this will be a list of all
-               available specified pools.
+               Optionally, use the token ${SUBSTOKEN} one or more times
+               in the command's arguments to have zzzrun insert the pool
+               scope when running the command.
+               If using single run mode this will be a list of all
+               available specified pools, otherwise this will be the
+               name of each pool as zzzrun iterates through them.
 " 1>&2
 exit 1
 }
@@ -160,7 +160,7 @@ run_action() { # pool name(s)
   local SCOPE="$1"
   print_log debug "Running command for pool(s): ${SCOPE}"
 
-  local CMD=$(env echo $COMMAND | sed "s/${SUBSTOKEN}/${SCOPE}/")
+  local CMD=$(env echo $COMMAND | sed "s/${SUBSTOKEN}/${SCOPE}/g")
   print_log info "Executing command: ${CMD}"
 
   exec $CMD
