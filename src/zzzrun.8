@@ -64,6 +64,20 @@ permit command execution on sleeping/standby drives, or fail to run the
 command for an otherwise fully active pool.  Where \fBhdparm -C\fR
 returns "unknown" for a drive, \fB\*p\fR will interpret this as
 active/idle.
+.SH EXIT STATUS
+The following exit values are returned:
+.TP
+.B 0
+Successful completion.
+.TP
+.B 1
+An error occurred.
+.TP
+.B 2
+Invalid command line options were specified.
+.TP
+.B 3
+No pools were available to process.
 .SH SEE ALSO
 .BR zfs (8),
 .BR hdparm (8),

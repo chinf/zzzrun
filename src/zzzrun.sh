@@ -56,8 +56,8 @@ power modes.
                If using zzzrun -s this will be a list of all available
                specified pools, otherwise this will be the name of each
                pool as zzzrun iterates through them.
-" 1>&2
-exit 1
+" >&2
+exit 2
 }
 
 print_log() { # level, message
@@ -73,25 +73,25 @@ print_log() { # level, message
 
 if [[ `id -u` -ne 0 ]]; then
   echo "Please run as root"
-  exit 1
+  exit 2
 fi
 
 #
 # Options parsing
 #
-ALLPOOLS=1
+ALLPOOLS=yes
 ZPOOLLIST=$(env zpool list -H -o name)
 POOLS=""
-PERPOOL=1
+PERPOOL=yes
 
 while getopts ":svp:" OPT; do
   case "${OPT}" in
-    s) PERPOOL=0 ;;
+    s) PERPOOL=no ;;
     v) VERBOSITY=`expr $VERBOSITY + 1` ;;
     p)
       if [ -z "${OPTARG}" ]; then print_usage; fi
 
-      ALLPOOLS=0
+      ALLPOOLS=no
 
       # Validate argument against currently available pools
       for ZPOOL in $ZPOOLLIST
@@ -111,18 +111,18 @@ if [ -z "$*" ]; then print_usage; fi
 COMMAND="$*"
 print_log debug "COMMAND: $COMMAND"
 
-if [ $ALLPOOLS -eq 0 ]; then
+if [ $ALLPOOLS = "no" ]; then
   if [ -z "$POOLS" ]; then
     print_log warn "None of the pools specified are available"
     print_log debug "ZPOOLLIST: ${ZPOOLLIST}"
-    exit 1
+    exit 3
   fi
 else
   if [ -n "$ZPOOLLIST" ]; then
     POOLS="$ZPOOLLIST"
   else
     print_log warn "No pools are available on this system"
-    exit 1
+    exit 3
   fi
 fi
 print_log info "Pool(s) available to process:\n${POOLS}"
@@ -131,9 +131,9 @@ print_log debug "Processing per pool: ${PERPOOL}"
 #
 # Main functions
 #
-count_standby_disks() { # pool name(s)
+get_pool_disks() { # pool list
   local SCOPE="$1"
-  print_log debug "Counting standby disks in pool(s): ${SCOPE}"
+  print_log debug "Finding hard drives in pool(s):\n${SCOPE}"
 
   # Parse zpool status to get all devices used by the specified pool(s)
   local DEVS=$(env LC_ALL=C zpool status -L $SCOPE \
@@ -150,32 +150,29 @@ count_standby_disks() { # pool name(s)
       sub("\"",""); print $1 }' | sort -u)
   print_log debug "HDDS:\n${HDDS}"
 
-  local COUNT
-  local DRIVESTATES
-  local UNKNOWNS
-  if [ -n "${HDDS}" ]; then
-    # Count disks in standby or sleeping states
-    DRIVESTATES=$(env echo "${HDDS}" | xargs hdparm -C)
-    COUNT=$(env echo "${DRIVESTATES}" | grep -cE 'standby|sleeping')
-    UNKNOWNS=$(env echo "${DRIVESTATES}" | grep -cE 'unknown')
-    if [ $UNKNOWNS -gt 0 ]; then
-      print_log warn "Unable to read status for at least one drive"
-    fi
-    print_log debug "COUNT: ${COUNT}"
-  else
-    print_log debug "No hard drives in pool(s)"
-    COUNT=0
-  fi
-
-  echo $COUNT
+  echo $HDDS
 }
 
-run_action() { # pool name(s)
+count_standby_disks() { # hdds
+  local DISKS="$1"
+  print_log debug "Counting disks in standby or sleeping states"
+
+  local DRIVESTATES=$(env echo "${DISKS}" | xargs hdparm -C)
+  print_log debug "DRIVESTATES:\n${DRIVESTATES}"
+
+  local UNKNOWNS=$(env echo "${DRIVESTATES}" | grep -cE 'unknown')
+  if [ $UNKNOWNS -gt 0 ]; then
+    print_log warn "Unable to read status for at least one drive"
+  fi
+
+  echo "${DRIVESTATES}" | grep -cE 'standby|sleeping'
+}
+
+run_action() { # pool list
   local SCOPE="$1"
-  print_log debug "Running command for pool(s): ${SCOPE}"
 
   local CMD=$(env echo $COMMAND | sed "s/${SUBSTOKEN}/${SCOPE}/g")
-  print_log info "Executing command '${CMD}':"
+  print_log debug "Executing command '${CMD}':"
 
   $CMD >&2
 }
@@ -185,31 +182,30 @@ run_action() { # pool name(s)
 #
 for POOL in $POOLS
 do
-  if [ $PERPOOL -eq 1 ]; then
+  if [ $PERPOOL = "yes" ]; then
     POOLSCOPE="${POOL}"
   else
     POOLSCOPE="${POOLS}"
   fi
 
-  STANDBYCOUNT=`count_standby_disks "${POOLSCOPE}"`
-  if [ $PERPOOL -eq 1 ]; then
+  POOLDISKS=`get_pool_disks "${POOLSCOPE}"`
+  if [ -n "${POOLDISKS}" ]; then
+    STANDBYCOUNT=`count_standby_disks "${POOLDISKS}"`
     print_log info \
-      "${STANDBYCOUNT} disk(s) in standby in pool:\n${POOLSCOPE}"
+      "${STANDBYCOUNT} disk(s) standby/sleep in pool(s):\n${POOLSCOPE}"
   else
-    print_log info \
-      "${STANDBYCOUNT} disk(s) in standby across pool(s):\n${POOLSCOPE}"
+    STANDBYCOUNT=0
+    print_log info "No hard drives in pool(s):\n${POOLSCOPE}"
   fi
 
   if [ $STANDBYCOUNT -eq 0 ]; then
+    print_log info "Running command for pool(s): ${POOLSCOPE}"
     run_action "${POOLSCOPE}"
   else
     print_log info "Skipping execution"
   fi
 
-  if [ $PERPOOL -eq 0 ]; then
-    print_log debug "Single run mode: exiting loop"
-    break
-  fi
+  if [ $PERPOOL = "no" ]; then break; fi
 done
 
 print_log debug "$0 finished."
