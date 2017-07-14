@@ -1,43 +1,52 @@
 .TH ZZZRUN "8" "July 14, 2017" "zzzrun.sh" "System Administration Commands"
 .SH NAME
 zzzrun \- run command if ZFS pool has no sleeping disks
+.ds p zzzrun
+.ds t @zzzrun-pool
 .SH SYNOPSIS
-.B zzzrun
-[\fIoptions\fR] [\fI-p POOL\fR] ... \fICOMMAND \fR[\fI@zzzrun-pool\fR] ...
+.B \*p
+[\fIoptions\fR]
+[\fB-p\fR \fIPOOL\fR] ...
+\fICOMMAND\fR [\fB\*t\fR] ...
 .SH DESCRIPTION
-.B zzzrun
-runs a command only if a ZFS pool has no hard drives in standby.
-If all disks in the pool are active/idle then the command supplied
-will be executed.  Use this command to avoid spinning up drives
-unnecessarily.
+.B \*p
+checks the standby status of all rotational drives in a ZFS pool (using \fBhdparm -C\fR), and only if they are all active/idle runs the command supplied.
+Use this command to avoid spinning up drives unnecessarily.
 .SH OPTIONS
 .TP
-\fB\-s\fR
-Single run.  By default \fBzzzrun\fR will check and execute on a
-per pool basis.  This option will instead check all disks across
-all pools in scope and execute COMMAND just once if there are no
-disks in standby.
+.B \-s
+Single run.  By default \fB\*p\fR will check and execute on a per pool basis.
+This option will instead check all disks across all pools in scope and execute \fICOMMAND\fR just once if there are no disks in standby.
 .TP
-\fB\-v\fR
+.B \-v
 Verbose mode.  Report warnings and information.
 .TP
-\fB\-vv\fR
+.B \-vv
 Very verbose.  Report debugging messages.
 .TP
-\fB\-p\fR \fIPOOL\fR
-Specify a pool to check, otherwise all available pools are
-included by default.  Repeat this option to specify more than one
-pool.  Any pools specified that are unavailable will be ignored.
+.B \-p\fR \fIPOOL
+Specify a pool to check, otherwise all available pools are included by default.
+Repeat this option to specify more than one pool.
+Any pools specified that are unavailable will be ignored.
+A warning is given if none of the pools are available.
 .TP
-COMMAND
-Command to execute.
+.I COMMAND
+Command to execute if no hard drives in the pool(s) are in standby.
 .IP
-Optionally, use the token @zzzrun-pool one or more times in the
-command's arguments to have zzzrun insert the pool scope when
-running the command.
-.IP
-If using single run mode this will be a list of all available
-specified pools, otherwise this will be the name of each pool as
-zzzrun iterates through them.
+Optionally, use the token \fB\*t\fR one or more times in the command's arguments to have \fB\*p\fR insert the pool scope when running the command.
+If using \fB\*p -s\fR this will be a list of all available specified pools, otherwise this will be the name of each pool as \fB\*p\fR iterates through them.
+.SH EXAMPLES
+To use
+.BR zfs-auto-snapshot (8)
+without waking up any sleeping hard drives:
+.PP
+.nf
+.RS
+\*p zfs-auto-snapshot -qg -l frequent -k 4 \*t
+.RE
+.fi
+.PP
 .SH SEE ALSO
-.BR zfs-auto-snapshot (8), zfs (8)
+.BR zfs (8),
+.BR hdparm (8),
+.BR zfs-auto-snapshot (8)
