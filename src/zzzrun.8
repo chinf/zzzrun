@@ -10,13 +10,17 @@ zzzrun \- run command if ZFS pool has no sleeping hard drives
 \fICOMMAND\fR [\fB\*t\fR] ...
 .SH DESCRIPTION
 .B \*p
-checks the standby status of all rotational drives in a ZFS pool (using \fBhdparm -C\fR), and only if they are all active/idle runs the command supplied.
+checks the standby status of all rotational drives in a ZFS pool (using
+\fBhdparm -C\fR), and only if they are all active/idle runs the command
+supplied.
 Use this utility to avoid spinning up drives unnecessarily.
 .SH OPTIONS
 .TP
 .B \-s
-Single run.  By default \fB\*p\fR will check and execute on a per pool basis.
-This option will instead check all disks across all pools in scope and execute \fICOMMAND\fR just once if there are no disks in standby.
+Single run.  By default \fB\*p\fR will check and execute on a per pool
+basis.
+This option will instead check all disks across all pools in scope and
+execute \fICOMMAND\fR just once if there are no disks in standby.
 .TP
 .B \-v
 Verbose mode.  Report warnings and information.  By default this
@@ -26,7 +30,8 @@ utility will only report errors.
 Very verbose.  Report debugging messages.
 .TP
 .B \-p\fR \fIPOOL
-Specify a pool to check, otherwise all available pools are included by default.
+Specify a pool to check, otherwise all available pools are included by
+default.
 Repeat this option to specify more than one pool.
 Any pools specified that are unavailable will be ignored.
 A warning is given if none of the pools are available.
@@ -34,8 +39,12 @@ A warning is given if none of the pools are available.
 .I COMMAND
 Command to execute if no hard drives in the pool(s) are in standby.
 .IP
-Optionally, use the token \fB\*t\fR one or more times in the command's arguments to have \fB\*p\fR insert the pool scope when running the command.
-If using \fB\*p -s\fR this will be a list of all available specified pools, otherwise this will be the name of each pool as \fB\*p\fR iterates through them.
+Optionally, use the token \fB\*t\fR one or more times in the command's
+arguments to have \fB\*p\fR insert the pool scope when running the
+command.
+If using \fB\*p -s\fR this will be a list of all available specified
+pools, otherwise this will be the name of each pool as \fB\*p\fR
+iterates through them.
 .SH EXAMPLES
 To use
 .BR zfs-auto-snapshot (8)

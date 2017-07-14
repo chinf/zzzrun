@@ -47,15 +47,17 @@ executed.  Use this utility to avoid spinning up drives unnecessarily.
   -p POOL      Specify a pool to check, otherwise all available pools are
                included by default.  Repeat this option to specify more
                than one pool.  Any pools specified that are unavailable
-               will be ignored.
+               will be ignored.  A warning is given if none of the pools
+               are available.
 
-  COMMAND      Command to execute.
+  COMMAND      Command to execute if no hard drives in the pool(s) are in
+               standby.
                Optionally, use the token ${SUBSTOKEN} one or more times
                in the command's arguments to have zzzrun insert the pool
                scope when running the command.
-               If using single run mode this will be a list of all
-               available specified pools, otherwise this will be the
-               name of each pool as zzzrun iterates through them.
+               If using zzzrun -s this will be a list of all available
+               specified pools, otherwise this will be the name of each
+               pool as zzzrun iterates through them.
 " 1>&2
 exit 1
 }
@@ -86,6 +88,8 @@ PERPOOL=1
 
 while getopts ":svp:" OPT; do
   case "${OPT}" in
+    s) PERPOOL=0 ;;
+    v) VERBOSITY=`expr $VERBOSITY + 1` ;;
     p)
       if [ -z "${OPTARG}" ]; then print_usage; fi
 
@@ -97,8 +101,6 @@ while getopts ":svp:" OPT; do
         if [ $OPTARG = $ZPOOL ]; then POOLS+="${OPTARG} "; fi
       done
       ;;
-    s) PERPOOL=0 ;;
-    v) VERBOSITY=`expr $VERBOSITY + 1` ;;
     *) print_usage ;;
   esac
 done
