@@ -75,7 +75,7 @@ print_log() { # level, message
 # Options parsing
 #
 ALLPOOLS=yes
-ZPOOLLIST=$(env zpool list -H -o name)
+ZPOOLLIST=$(env sudo zpool list -H -o name)
 POOLS=""
 PERPOOL=yes
 
@@ -106,11 +106,6 @@ if [ -z "$*" ]; then print_usage; fi
 COMMAND="$*"
 print_log debug "COMMAND: $COMMAND"
 
-if [[ `id -u` -ne 0 ]]; then
-  echo "Please run as root"
-  exit 2
-fi
-
 if [ $ALLPOOLS = "no" ]; then
   if [ -z "$POOLS" ]; then
     print_log warn "None of the pools specified are available"
@@ -136,7 +131,7 @@ get_pool_disks() { # pool list
   print_log debug "Finding hard drives in pool(s):\n${SCOPE}"
 
   # Parse zpool status to get all devices used by the specified pool(s)
-  local DEVS=$(env LC_ALL=C zpool status -L $SCOPE \
+  local DEVS=$(env LC_ALL=C sudo zpool status -L $SCOPE \
     | awk '/^\t +.+ +[A-Z]+ +[0-9]+ +[0-9]+ +[0-9]+/ \
     { print "/dev/"$1 }')
   print_log debug "DEVS:\n${DEVS}"
@@ -157,7 +152,7 @@ count_standby_disks() { # hdds
   local DISKS="$1"
   print_log debug "Counting disks in standby or sleeping states"
 
-  local DRIVESTATES=$(env echo "${DISKS}" | xargs hdparm -C)
+  local DRIVESTATES=$(env echo "${DISKS}" | xargs sudo hdparm -C)
   print_log debug "DRIVESTATES:\n${DRIVESTATES}"
 
   local UNKNOWNS=$(env echo "${DRIVESTATES}" | grep -cE 'unknown')
