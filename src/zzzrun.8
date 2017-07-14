@@ -1,0 +1,43 @@
+.TH ZZZRUN "8" "July 14, 2017" "zzzrun.sh" "System Administration Commands"
+.SH NAME
+zzzrun \- run command if ZFS pool has no sleeping disks
+.SH SYNOPSIS
+.B zzzrun
+[\fIoptions\fR] [\fI-p POOL\fR] ... \fICOMMAND \fR[\fI@zzzrun-pool\fR] ...
+.SH DESCRIPTION
+.B zzzrun
+runs a command only if a ZFS pool has no hard drives in standby.
+If all disks in the pool are active/idle then the command supplied
+will be executed.  Use this command to avoid spinning up drives
+unnecessarily.
+.SH OPTIONS
+.TP
+\fB\-s\fR
+Single run.  By default \fBzzzrun\fR will check and execute on a
+per pool basis.  This option will instead check all disks across
+all pools in scope and execute COMMAND just once if there are no
+disks in standby.
+.TP
+\fB\-v\fR
+Verbose mode.  Report warnings and information.
+.TP
+\fB\-vv\fR
+Very verbose.  Report debugging messages.
+.TP
+\fB\-p\fR \fIPOOL\fR
+Specify a pool to check, otherwise all available pools are
+included by default.  Repeat this option to specify more than one
+pool.  Any pools specified that are unavailable will be ignored.
+.TP
+COMMAND
+Command to execute.
+.IP
+Optionally, use the token @zzzrun-pool one or more times in the
+command's arguments to have zzzrun insert the pool scope when
+running the command.
+.IP
+If using single run mode this will be a list of all available
+specified pools, otherwise this will be the name of each pool as
+zzzrun iterates through them.
+.SH SEE ALSO
+.BR zfs-auto-snapshot (8), zfs (8)
