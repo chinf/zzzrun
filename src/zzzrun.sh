@@ -1,12 +1,13 @@
 #!/bin/bash
 
-# zzzrun - Run a command only if a ZFS pool has no sleeping hard drives
+# zzzrun - Run command only if ZFS pool has no sleeping hard drives
 # Copyright (C) 2017 Francis Chin <dev@fchin.com>
 #
 # Repository: https://github.com/chinf/zzzrun
 #
-# Evolved from durandalTR's zstandby script at
-# https://github.com/zfsonlinux/pkg-zfs/issues/54
+# Based on durandalTR's zstandby script
+# (https://github.com/zfsonlinux/pkg-zfs/issues/54) and also
+# zfs-auto-snapshot (https://github.com/zfsonlinux/zfs-auto-snapshot)
 # 
 # Awk compatibility note:
 # Tested with mawk and gawk for wider compatibility
@@ -28,27 +29,32 @@ SUBSTOKEN="@zzzrun-pool"
 VERBOSITY=0
 
 print_usage() {
-  echo "Usage: $0 [-s] [-v]... [-p POOL]... \"COMMAND [${SUBSTOKEN}]\"
-Run a command only if a ZFS pool has no hard drives in a standby state.
+  echo "Usage: $0 [options] [-p POOL]... COMMAND [${SUBSTOKEN}]
+Run a command only if a ZFS pool has no hard drives in standby.
 If all disks in the pool are active/idle then the command supplied will be
-executed. Use this command to avoid spinning up drives unnecessarily.
+executed.  Use this command to avoid spinning up drives unnecessarily.
 
-  COMMAND      Command (in double quotes) to execute.
-               Include ${SUBSTOKEN} in the argument string to substitute
-               in the current pool name. If single mode is specified, this
-               will be a list of all available specified pools.
+  -s           Single mode.  By default zzzrun will check and execute on a
+               per pool basis.  This option will instead check all disks
+               across all pools in scope and execute COMMAND just once if
+               there are no disks in standby.
 
-  -s           Single mode - treat all pools as one. COMMAND will be run
-               just once if there are no disks in standby.
-               Default behaviour is to check and execute per pool.
+  -v           Verbose mode.  Report warnings and information.
 
-  -v           Verbose mode - report warnings and information.
+  -vv          Very verbose.  Report debugging messages.
 
-  -vv          Very verbose - report debug information.
+  -p POOL      Specify a pool to check, otherwise all available pools are
+               included by default.  Repeat this option to specify more
+               than one pool.  Any pools specified that are unavailable
+               will be ignored.
 
-  -p POOL      Specify pool(s) to check, otherwise all available pools are
-               included by default. Any pools specified that are not
-               available will be ignored.
+  COMMAND      Command to execute.
+               Include the token ${SUBSTOKEN} in the argument string to
+               have zzzrun substitute in the current pool scope when
+               running the command.  For the default operation mode this
+               will be name of each pool as zzzrun iterates through them.
+               If single mode is specified, this will be a list of all
+               available specified pools.
 " 1>&2
 exit 1
 }
@@ -100,8 +106,8 @@ shift $((OPTIND-1))
 #
 # Configuration validation
 #
-if [ -z "$1" ]; then print_usage; fi
-COMMAND="$1"
+if [ -z "$*" ]; then print_usage; fi
+COMMAND="$*"
 print_log debug "COMMAND: $COMMAND"
 
 if [ $ALLPOOLS -eq 0 ]; then
