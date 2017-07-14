@@ -32,14 +32,15 @@ print_usage() {
   echo "Usage: $0 [options] [-p POOL]... COMMAND [${SUBSTOKEN}] ...
 Run a command only if a ZFS pool has no hard drives in standby.
 If all disks in the pool are active/idle then the command supplied will be
-executed.  Use this command to avoid spinning up drives unnecessarily.
+executed.  Use this utility to avoid spinning up drives unnecessarily.
 
   -s           Single run.  By default zzzrun will check and execute on a
                per pool basis.  This option will instead check all disks
                across all pools in scope and execute COMMAND just once if
                there are no disks in standby.
 
-  -v           Verbose mode.  Report warnings and information.
+  -v           Verbose mode.  Report warnings and information.  By default
+               this utility will only report errors.
 
   -vv          Very verbose.  Report debugging messages.
 
