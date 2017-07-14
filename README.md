@@ -12,7 +12,7 @@ Depends on the standard ZFS utilities and hdparm. Currently implementated in bas
 wget https://github.com/chinf/zzzrun/archive/master.zip
 unzip master.zip
 cd zzzrun-master
-make install
+sudo make install
 ```
 This will install cron entries for zzzrun under:
 
