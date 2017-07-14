@@ -71,11 +71,6 @@ print_log() { # level, message
   esac
 }
 
-if [[ `id -u` -ne 0 ]]; then
-  echo "Please run as root"
-  exit 2
-fi
-
 #
 # Options parsing
 #
@@ -110,6 +105,11 @@ shift $((OPTIND-1))
 if [ -z "$*" ]; then print_usage; fi
 COMMAND="$*"
 print_log debug "COMMAND: $COMMAND"
+
+if [[ `id -u` -ne 0 ]]; then
+  echo "Please run as root"
+  exit 2
+fi
 
 if [ $ALLPOOLS = "no" ]; then
   if [ -z "$POOLS" ]; then
