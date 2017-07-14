@@ -10,9 +10,9 @@ zzzrun \- run command if ZFS pool has no sleeping hard drives
 \fICOMMAND\fR [\fB\*t\fR] ...
 .SH DESCRIPTION
 .B \*p
-checks the standby status of all rotational drives in a ZFS pool (using
-\fBhdparm -C\fR), and only if they are all active/idle runs the command
-supplied.
+checks the standby/sleep status of all rotational drives in a ZFS pool
+(using \fBhdparm -C\fR), and only if they are all active/idle runs the
+command supplied.
 Use this utility to avoid spinning up drives unnecessarily.
 .SH OPTIONS
 .TP
@@ -20,7 +20,7 @@ Use this utility to avoid spinning up drives unnecessarily.
 Single run.  By default \fB\*p\fR will check and execute on a per pool
 basis.
 This option will instead check all disks across all pools in scope and
-execute \fICOMMAND\fR just once if there are no disks in standby.
+execute \fICOMMAND\fR just once if there are no disks in standby/sleep.
 .TP
 .B \-v
 Verbose mode.  Report warnings and information.  By default this
@@ -37,7 +37,8 @@ Any pools specified that are unavailable will be ignored.
 A warning is given if none of the pools are available.
 .TP
 .I COMMAND
-Command to execute if no hard drives in the pool(s) are in standby.
+Command to execute if no hard drives in the pool(s) are in standby or
+sleep modes.
 .IP
 Optionally, use the token \fB\*t\fR one or more times in the command's
 arguments to have \fB\*p\fR insert the pool scope when running the
@@ -52,10 +53,17 @@ without waking up any sleeping hard drives:
 .PP
 .nf
 .RS
-\*p zfs-auto-snapshot -qg -l frequent -k 4 \*t
+\*p zfs-auto-snapshot -qg -lfrequent -k4 \*t
 .RE
 .fi
 .PP
+.SH LIMITATIONS
+Some drives do not report their power state correctly (particularly if
+they are connected via USB) so in those cases this utility will either
+permit command execution on sleeping/standby drives, or fail to run the 
+command for an otherwise fully active pool.  Where \fBhdparm -C\fR
+returns "unknown" for a drive, \fB\*p\fR will interpret this as
+active/idle.
 .SH SEE ALSO
 .BR zfs (8),
 .BR hdparm (8),

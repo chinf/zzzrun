@@ -30,14 +30,13 @@ VERBOSITY=0
 
 print_usage() {
   echo "Usage: $0 [options] [-p POOL]... COMMAND [${SUBSTOKEN}] ...
-Run a command only if a ZFS pool has no hard drives in standby.
-If all disks in the pool are active/idle then the command supplied will be
-executed.  Use this utility to avoid spinning up drives unnecessarily.
+Run a command only if a ZFS pool has no hard drives in standby or sleep
+power modes.
 
   -s           Single run.  By default zzzrun will check and execute on a
                per pool basis.  This option will instead check all disks
                across all pools in scope and execute COMMAND just once if
-               there are no disks in standby.
+               there are no disks in standby/sleep.
 
   -v           Verbose mode.  Report warnings and information.  By default
                this utility will only report errors.
@@ -47,11 +46,10 @@ executed.  Use this utility to avoid spinning up drives unnecessarily.
   -p POOL      Specify a pool to check, otherwise all available pools are
                included by default.  Repeat this option to specify more
                than one pool.  Any pools specified that are unavailable
-               will be ignored.  A warning is given if none of the pools
-               are available.
+               will be ignored.
 
   COMMAND      Command to execute if no hard drives in the pool(s) are in
-               standby.
+               standby or sleep modes.
                Optionally, use the token ${SUBSTOKEN} one or more times
                in the command's arguments to have zzzrun insert the pool
                scope when running the command.
@@ -66,10 +64,10 @@ print_log() { # level, message
   local LEVEL=$1
   shift 1
   case $LEVEL in
-    (err*) echo "Error: $*" >&2 ;;
-    (war*) if [ $VERBOSITY -gt 0 ]; then echo "Warning: $*" >&2; fi ;;
-    (inf*) if [ $VERBOSITY -gt 0 ]; then echo "$*" >&2; fi ;;
-    (deb*) if [ $VERBOSITY -gt 1 ]; then echo "Debug: $*" >&2; fi ;;
+    (err*) echo -e "Error: $*" >&2 ;;
+    (war*) if [ $VERBOSITY -gt 0 ]; then echo -e "Warning: $*" >&2; fi ;;
+    (inf*) if [ $VERBOSITY -gt 0 ]; then echo -e "$*" >&2; fi ;;
+    (deb*) if [ $VERBOSITY -gt 1 ]; then echo -e "Debug: $*" >&2; fi ;;
   esac
 }
 
@@ -115,7 +113,7 @@ print_log debug "COMMAND: $COMMAND"
 
 if [ $ALLPOOLS -eq 0 ]; then
   if [ -z "$POOLS" ]; then
-    print_log warning "None of the pools specified are available"
+    print_log warn "None of the pools specified are available"
     print_log debug "ZPOOLLIST: ${ZPOOLLIST}"
     exit 1
   fi
@@ -123,11 +121,11 @@ else
   if [ -n "$ZPOOLLIST" ]; then
     POOLS="$ZPOOLLIST"
   else
-    print_log warning "No pools are available on this system"
+    print_log warn "No pools are available on this system"
     exit 1
   fi
 fi
-print_log info "Pool(s) available to process: ${POOLS}"
+print_log info "Pool(s) available to process:\n${POOLS}"
 print_log debug "Processing per pool: ${PERPOOL}"
 
 #
@@ -138,23 +136,36 @@ count_standby_disks() { # pool name(s)
   print_log debug "Counting standby disks in pool(s): ${SCOPE}"
 
   # Parse zpool status to get all devices used by the specified pool(s)
-  local VDEVS=$(env LC_ALL=C zpool status -L $SCOPE \
-    | awk '/^\t +[a-zA-Z0-9]+ +[a-zA-Z0-9]+ +[0-9]+ +[0-9]+ +[0-9]+/ \
+  local DEVS=$(env LC_ALL=C zpool status -L $SCOPE \
+    | awk '/^\t +.+ +[A-Z]+ +[0-9]+ +[0-9]+ +[0-9]+/ \
     { print "/dev/"$1 }')
-  print_log debug "VDEVS: ${VDEVS}"
+  print_log debug "DEVS:\n${DEVS}"
 
   # Filter pool device list down to just hard drives
-  # Using lsblk to lookup parent device (in case vdev is a partition) and
-  # rotational parameter
-  local HDDS=$(env LC_ALL=C echo $VDEVS | xargs lsblk -no pkname,rota \
-    | awk '/^[a-zA-Z0-9]+ +1$/ { print "/dev/"$1 }' | sort -u)
-  print_log debug "HDDS: ${HDDS}"
+  # Using lsblk to lookup parent device (in case dev is a partition
+  # or luks container) and rotational parameter
+  local HDDS=$(env LC_ALL=C echo "${DEVS}" \
+    | xargs lsblk -Pso name,rota,type 2>/dev/null \
+    | awk '/ROTA="1" TYPE="disk"$/ { sub("NAME=\"","/dev/"); \
+      sub("\"",""); print $1 }' | sort -u)
+  print_log debug "HDDS:\n${HDDS}"
 
-  # Count disks in standby state
-  # A report of 'standby' from hdparm -C seems to include disks in either
-  # standby (hdparm -y) or sleep (hdparm -Y) power modes
-  local COUNT=$(env echo $HDDS | xargs hdparm -C | grep -cE 'standby')
-  print_log debug "COUNT: ${COUNT}"
+  local COUNT
+  local DRIVESTATES
+  local UNKNOWNS
+  if [ -n "${HDDS}" ]; then
+    # Count disks in standby or sleeping states
+    DRIVESTATES=$(env echo "${HDDS}" | xargs hdparm -C)
+    COUNT=$(env echo "${DRIVESTATES}" | grep -cE 'standby|sleeping')
+    UNKNOWNS=$(env echo "${DRIVESTATES}" | grep -cE 'unknown')
+    if [ $UNKNOWNS -gt 0 ]; then
+      print_log warn "Unable to read status for at least one drive"
+    fi
+    print_log debug "COUNT: ${COUNT}"
+  else
+    print_log debug "No hard drives in pool(s)"
+    COUNT=0
+  fi
 
   echo $COUNT
 }
@@ -164,9 +175,9 @@ run_action() { # pool name(s)
   print_log debug "Running command for pool(s): ${SCOPE}"
 
   local CMD=$(env echo $COMMAND | sed "s/${SUBSTOKEN}/${SCOPE}/g")
-  print_log info "Executing command: ${CMD}"
+  print_log info "Executing command '${CMD}':"
 
-  exec $CMD
+  $CMD >&2
 }
 
 #
@@ -175,7 +186,7 @@ run_action() { # pool name(s)
 for POOL in $POOLS
 do
   if [ $PERPOOL -eq 1 ]; then
-    POOLSCOPE="$POOL"
+    POOLSCOPE="${POOL}"
   else
     POOLSCOPE="${POOLS}"
   fi
@@ -183,19 +194,22 @@ do
   STANDBYCOUNT=`count_standby_disks "${POOLSCOPE}"`
   if [ $PERPOOL -eq 1 ]; then
     print_log info \
-      "${STANDBYCOUNT} disk(s) in standby in pool: ${POOLSCOPE}"
+      "${STANDBYCOUNT} disk(s) in standby in pool:\n${POOLSCOPE}"
   else
     print_log info \
-      "${STANDBYCOUNT} disk(s) in standby across pool(s): ${POOLSCOPE}"
+      "${STANDBYCOUNT} disk(s) in standby across pool(s):\n${POOLSCOPE}"
   fi
 
   if [ $STANDBYCOUNT -eq 0 ]; then
     run_action "${POOLSCOPE}"
   else
-    print_log debug "Skipping execution"
+    print_log info "Skipping execution"
   fi
 
-  if [ $PERPOOL -eq 0 ]; then break; fi
+  if [ $PERPOOL -eq 0 ]; then
+    print_log debug "Single run mode: exiting loop"
+    break
+  fi
 done
 
 print_log debug "$0 finished."
