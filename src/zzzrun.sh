@@ -140,9 +140,9 @@ get_pool_disks() { # pool list
   # Using lsblk to lookup parent device (in case dev is a partition
   # or luks container) and rotational parameter
   local HDDS=$(env LC_ALL=C echo "${DEVS}" \
-    | xargs lsblk -Pso name,rota,type 2>/dev/null \
-    | awk '/ROTA="1" TYPE="disk"$/ { sub("NAME=\"","/dev/"); \
-      sub("\"",""); print $1 }' | sort -u)
+    | xargs lsblk -lso name,rota,type 2>/dev/null \
+    | awk '/1 disk$/ { print "/dev/"$1 }' \
+    | sort -u)
   print_log debug "HDDS:\n${HDDS}"
 
   echo $HDDS
