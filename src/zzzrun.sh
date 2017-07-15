@@ -25,8 +25,23 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-SUBSTOKEN="@zzzrun-pool"
 VERBOSITY=0
+
+print_log() { # level, message
+  local LEVEL=$1
+  shift 1
+  case $LEVEL in
+    (err*) echo -e "Error: $*" >&2 ;;
+    (war*) if [ $VERBOSITY -gt 0 ]; then echo -e "Warning: $*" >&2; fi ;;
+    (inf*) if [ $VERBOSITY -gt 0 ]; then echo -e "$*" >&2; fi ;;
+    (deb*) if [ $VERBOSITY -gt 1 ]; then echo -e "Debug: $*" >&2; fi ;;
+  esac
+}
+
+#
+# Options
+#
+SUBSTOKEN="@zzzrun-pool"
 
 print_usage() {
   echo "Usage: $0 [options] [-p POOL]... COMMAND [${SUBSTOKEN}] ...
@@ -60,51 +75,42 @@ power modes.
 exit 2
 }
 
-print_log() { # level, message
-  local LEVEL=$1
-  shift 1
-  case $LEVEL in
-    (err*) echo -e "Error: $*" >&2 ;;
-    (war*) if [ $VERBOSITY -gt 0 ]; then echo -e "Warning: $*" >&2; fi ;;
-    (inf*) if [ $VERBOSITY -gt 0 ]; then echo -e "$*" >&2; fi ;;
-    (deb*) if [ $VERBOSITY -gt 1 ]; then echo -e "Debug: $*" >&2; fi ;;
-  esac
-}
-
-#
-# Options parsing
-#
 ALLPOOLS=yes
-ZPOOLLIST=$(env sudo zpool list -H -o name)
-POOLS=""
 PERPOOL=yes
-
+POOLARGS=
 while getopts ":svp:" OPT; do
   case "${OPT}" in
     s) PERPOOL=no ;;
     v) VERBOSITY=`expr $VERBOSITY + 1` ;;
     p)
-      if [ -z "${OPTARG}" ]; then print_usage; fi
-
       ALLPOOLS=no
-
-      # Validate argument against currently available pools
-      for ZPOOL in $ZPOOLLIST
-      do
-        if [ $OPTARG = $ZPOOL ]; then POOLS+="${OPTARG} "; fi
-      done
+      if [ -n "${OPTARG}" ]; then
+        POOLARGS+="${OPTARG} "
+      else
+        print_usage
+      fi
       ;;
     *) print_usage ;;
   esac
 done
 shift $((OPTIND-1))
+if [ -z "$*" ]; then print_usage; fi
+COMMAND="$*"
+print_log debug "COMMAND: $COMMAND"
 
 #
 # Configuration validation
 #
-if [ -z "$*" ]; then print_usage; fi
-COMMAND="$*"
-print_log debug "COMMAND: $COMMAND"
+ZPOOLLIST=$(env sudo zpool list -H -o name)
+POOLS=
+for POOL in $POOLARGS
+do
+  # Validate argument against currently available pools
+  for ZPOOL in $ZPOOLLIST
+  do
+    if [ $POOL = $ZPOOL ]; then POOLS+="${POOL} "; fi
+  done
+done
 
 if [ $ALLPOOLS = "no" ]; then
   if [ -z "$POOLS" ]; then
