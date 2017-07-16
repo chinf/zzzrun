@@ -103,6 +103,7 @@ while getopts ":svp:x:" OPT; do
   esac
 done
 shift $((OPTIND-1))
+
 if [ -z "$*" ]; then print_usage; fi
 COMMAND="$*"
 print_log debug "Parsed COMMAND: $COMMAND"
@@ -117,18 +118,15 @@ if [ -z "${ZPOOLS}" ]; then
 fi
 if [ -z "${POOLARGS}" ]; then POOLARGS="${ZPOOLS}"; fi
 
-for POOLARG in $POOLARGS
-do
-  for POOLEXCLUDE in $POOLEXCLUDES
-  do
+for POOLARG in $POOLARGS; do
+  for POOLEXCLUDE in $POOLEXCLUDES; do
     if [ "${POOLARG}" = "${POOLEXCLUDE}" ]; then 
       print_log debug "Excluding pool: ${POOLARG}"
       continue 2
     fi
   done
 
-  for ZPOOL in $ZPOOLS
-  do
+  for ZPOOL in $ZPOOLS; do
     if [ "${POOLARG}" = "${ZPOOL}" ]; then
       POOLS+="${POOLARG} "
       break
@@ -199,8 +197,7 @@ run_action() { # pool list
 #
 # main()
 #
-for POOL in $POOLS
-do
+for POOL in $POOLS; do
   if [ "${RUNMODE}" = "single" ]; then
     POOLSCOPE="${POOLS}"
   else
