@@ -58,12 +58,18 @@ without waking up any sleeping hard drives:
 .fi
 .PP
 .SH LIMITATIONS
-Some drives do not report their power state correctly (particularly if
-they are connected via USB) so in those cases this utility will either
-permit command execution on sleeping/standby drives, or fail to run the 
-command for an otherwise fully active pool.  Where \fBhdparm -C\fR
-returns "unknown" for a drive, \fB\*p\fR will interpret this as
-active/idle.
+Hard drives that are connected to the host via USB may not report their
+power state correctly to \fBhdparm -C\fR.
+USB drives that appear to be in standby when they are not will cause
+this utility to fail to run the command for an otherwise fully active
+pool.
+In some cases \fBhdparm -C\fR may cause USB drives in standby to wake
+up, which defeats the purpose of this utility.
+A possible workaround would be to not use zzzrun on affected pool(s)
+and instead run the command manually as required.
+.IP
+Where \fBhdparm -C\fR returns "unknown" for a drive, \fB\*p\fR will
+interpret this as active/idle.
 .SH EXIT STATUS
 The following exit values are returned:
 .TP
