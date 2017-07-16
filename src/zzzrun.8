@@ -53,23 +53,25 @@ without waking up any sleeping hard drives:
 .PP
 .nf
 .RS
-\*p zfs-auto-snapshot -qg -lfrequent -k4 \*t
+\*p zfs-auto-snapshot -qg -l frequent -k 4 \*t
 .RE
 .fi
 .PP
 .SH LIMITATIONS
-Hard drives that are connected to the host via USB may not report their
-power state correctly to \fBhdparm -C\fR.
-USB drives that appear to be in standby when they are not will cause
-this utility to fail to run the command for an otherwise fully active
-pool.
+Hard drives that are connected to the host via USB may report their power
+state incorrectly to \fBhdparm -C\fR.
+USB drives that appear to hdparm to be in standby when they are not will
+cause this utility to skip runnning the command for otherwise fully active
+pools.
 In some cases \fBhdparm -C\fR may cause USB drives in standby to wake
 up, which defeats the purpose of this utility.
-A possible workaround would be to not use zzzrun on affected pool(s)
-and instead run the command manually as required.
-.IP
-Where \fBhdparm -C\fR returns "unknown" for a drive, \fB\*p\fR will
-interpret this as active/idle.
+.PP
+A possible workaround for both of these issues would be to not use
+zzzrun on affected pool(s) and instead run the command manually as
+required.
+.PP
+If \fBhdparm -C\fR returns "unknown" for a drive, \fB\*p\fR will interpret
+this as active/idle and so err in favour of running the command.
 .SH EXIT STATUS
 The following exit values are returned:
 .TP
