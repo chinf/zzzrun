@@ -6,8 +6,7 @@ zzzrun \- run command if ZFS pool has no sleeping hard drives
 .SH SYNOPSIS
 .B \*p
 [\fIoptions\fR]
-[\fB-p\fR \fIPOOL\fR] ...
-\fICOMMAND\fR [\fB\*t\fR] ...
+[\fB-p\fR \fIPOOL\fR]... [\fB-x\fR \fIPOOL\fR]... \fICOMMAND\fR [\fB\*t\fR]...
 .SH DESCRIPTION
 .B \*p
 checks the standby/sleep status of all rotational drives in a ZFS pool
@@ -35,6 +34,10 @@ default.
 Repeat this option to specify more than one pool.
 Any pools specified that are unavailable will be ignored.
 A warning is given if none of the pools are available.
+.TP
+.B \-x\fR \fIPOOL
+Exclude a pool.
+Repeat this option to specify more than one pool to exclude.
 .TP
 .I COMMAND
 Command to execute if no hard drives in the pool(s) are in standby or
