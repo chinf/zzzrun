@@ -26,3 +26,12 @@ The default cron configuration calls zfs-auto-snapshot with default values.
 If you wish to use this with zfs-auto-snapshot, you must comment out or otherwise disable zfs-auto-snapshot's own cron files in the same directories.
 
 If you don't wish to use this, simply remove or customise the zzzrun cron files for your own needs.
+
+## Limitations
+Hard drives that are connected to the host via USB may report their power state incorrectly to `hdparm -C`.
+USB drives that appear to hdparm to be in standby when they are not will cause this utility to skip runnning the command for otherwise fully active pools.
+In some cases `hdparm -C` may cause USB drives in standby to wake up, which defeats the purpose of this utility.
+
+A possible workaround for both of these issues would be to not use zzzrun on affected pool(s) and instead run the command manually as required.
+
+If `hdparm -C` returns "unknown" for a drive, zzzrun will interpret this as active/idle and so err in favour of running the command.
