@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # zzzrun - Run command only if ZFS pool has no sleeping hard drives
 # Copyright (C) 2017 Francis Chin <dev@fchin.com>
@@ -32,16 +32,16 @@ print_log() { # level, message
   shift 1
   case $LEVEL in
     (err*) echo -e "Error: $*" >&2 ;;
-    (war*) if [ $VERBOSITY -gt 0 ]; then echo -e "Warning: $*" >&2; fi ;;
-    (inf*) if [ $VERBOSITY -gt 0 ]; then echo -e "$*" >&2; fi ;;
-    (deb*) if [ $VERBOSITY -gt 1 ]; then echo -e "Debug: $*" >&2; fi ;;
+    (war*) if [ $VERBOSITY -gt 0 ]; then echo "Warning: $*" >&2; fi ;;
+    (inf*) if [ $VERBOSITY -gt 0 ]; then echo "$*" >&2; fi ;;
+    (deb*) if [ $VERBOSITY -gt 1 ]; then echo "Debug: $*" >&2; fi ;;
   esac
 }
 
 #
 # Options
 #
-SUBSTOKEN="@zzzrun-pool"
+readonly SUBSTOKEN="@zzzrun-pool"
 
 print_usage() {
   echo "Usage:
@@ -87,14 +87,14 @@ while getopts ":svp:x:" OPT; do
     v) VERBOSITY=`expr $VERBOSITY + 1` ;;
     p)
       if [ -n "${OPTARG}" ]; then
-        POOLARGS+="${OPTARG} "
+        POOLARGS="${POOLARGS} ${OPTARG}"
       else
         print_usage
       fi
       ;;
     x)
       if [ -n "${OPTARG}" ]; then
-        POOLEXCLUDES+="${OPTARG} "
+        POOLEXCLUDES="${POOLEXCLUDES} ${OPTARG}"
       else
         print_usage
       fi
@@ -128,7 +128,7 @@ for POOLARG in $POOLARGS; do
 
   for ZPOOL in $ZPOOLS; do
     if [ "${POOLARG}" = "${ZPOOL}" ]; then
-      POOLS+="${POOLARG} "
+      POOLS="${POOLS} ${POOLARG}"
       break
     fi
   done
@@ -149,11 +149,12 @@ print_log info "Pools available to process: ${POOLS}"
 # Main functions
 #
 get_pool_disks() { # pool list
-  local SCOPE="$1"
+  local SCOPE; local DEVS; local HDDS
+  SCOPE="$1"
   print_log debug "Finding hard drives in pool(s): ${SCOPE}"
 
   # Parse zpool status to get all devices used by the specified pool(s)
-  local DEVS=$(env LC_ALL=C sudo zpool status -L $SCOPE \
+  DEVS=$(env LC_ALL=C sudo zpool status -L $SCOPE \
     | awk '/^\t +.+ +[A-Z]+ +[0-9]+ +[0-9]+ +[0-9]+/ \
     { print "/dev/"$1 }')
   print_log debug "DEVS:\n${DEVS}"
@@ -161,7 +162,7 @@ get_pool_disks() { # pool list
   # Filter pool device list down to just hard drives
   # Using lsblk to lookup parent device (in case dev is a partition
   # or luks container) and rotational parameter
-  local HDDS=$(env LC_ALL=C echo "${DEVS}" \
+  HDDS=$(env LC_ALL=C echo "${DEVS}" \
     | xargs lsblk -lso name,rota,type 2>/dev/null \
     | awk '/1 disk$/ { print "/dev/"$1 }' \
     | sort -u)
@@ -171,13 +172,14 @@ get_pool_disks() { # pool list
 }
 
 count_standby_disks() { # hdds
-  local DISKS="$1"
+  local DISKS; local DRIVESTATES; local UNKNOWNS
+  DISKS="$1"
   print_log debug "Counting disks in standby or sleeping states"
 
-  local DRIVESTATES=$(env echo "${DISKS}" | xargs sudo hdparm -C)
+  DRIVESTATES=$(env echo "${DISKS}" | xargs sudo hdparm -C)
   print_log debug "DRIVESTATES:\n${DRIVESTATES}"
 
-  local UNKNOWNS=$(env echo "${DRIVESTATES}" | grep -cE 'unknown')
+  UNKNOWNS=$(env echo "${DRIVESTATES}" | grep -cE 'unknown')
   if [ "${UNKNOWNS}" -gt 0 ]; then
     print_log warn "Unable to read status for at least one drive"
   fi
@@ -186,9 +188,10 @@ count_standby_disks() { # hdds
 }
 
 run_action() { # pool list
-  local SCOPE="$1"
+  local SCOPE; local CMD
+  SCOPE="$1"
 
-  local CMD=$(env echo "${COMMAND}" | sed "s/${SUBSTOKEN}/${SCOPE}/g")
+  CMD=$(env echo "${COMMAND}" | sed "s/${SUBSTOKEN}/${SCOPE}/g")
   print_log debug "Executing command '${CMD}':"
 
   $CMD >&2
