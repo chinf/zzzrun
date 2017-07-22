@@ -31,7 +31,7 @@ print_log() { # level, message
   local LEVEL="$1"
   shift 1
   case $LEVEL in
-    (err*) echo -e "Error: $*" >&2 ;;
+    (err*) echo "Error: $*" >&2 ;;
     (war*) if [ $VERBOSITY -gt 0 ]; then echo "Warning: $*" >&2; fi ;;
     (inf*) if [ $VERBOSITY -gt 0 ]; then echo "$*" >&2; fi ;;
     (deb*) if [ $VERBOSITY -gt 1 ]; then echo "Debug: $*" >&2; fi ;;
