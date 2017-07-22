@@ -5,7 +5,7 @@ If all disks in the pool are active/idle then the command supplied will be execu
 
 Based on [durandalTR's zstandby script](https://github.com/zfsonlinux/pkg-zfs/issues/54) and [zfs-auto-snapshot](https://github.com/zfsonlinux/zfs-auto-snapshot).
 
-Depends on the standard ZFS utilities and hdparm.  Implementated in and tested with a POSIX-compliant shell.
+Depends on the standard ZFS utilities and hdparm.  Implemented in and tested with a POSIX-compliant shell.
 
 ## Installation
 ```
