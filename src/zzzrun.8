@@ -1,54 +1,62 @@
-.TH ZZZRUN "8" "July 14, 2017" "zzzrun.sh" "System Administration Commands"
+.TH ZZZRUN "8" "August 6, 2017" "zzzrun.sh" "System Administration Commands"
 .SH NAME
 zzzrun \- run command if ZFS pool has no sleeping hard drives
 .ds p zzzrun
 .ds t @zzzrun-pool
+.ds c /var/cache/zzzrun-cache
 .SH SYNOPSIS
 .B \*p
 [\fIoptions\fR]
-[\fB-p\fR \fIPOOL\fR]... [\fB-x\fR \fIPOOL\fR]... \fICOMMAND\fR [\fB\*t\fR]...
+[\fB-i\fR \fIPOOL\fR]... [\fB-x\fR \fIPOOL\fR]... \fICOMMAND\fR [\fB\*t\fR]...
 .SH DESCRIPTION
 .B \*p
-checks the standby/sleep status of all rotational drives in a ZFS pool
-(using \fBhdparm -C\fR), and only if they are all active/idle runs the
-command supplied.
+checks the standby/sleep status of all rotational drives in the ZFS pools
+specified, and only if they are all active/idle runs the command supplied.
 Use this utility to avoid spinning up drives unnecessarily.
 .SH OPTIONS
 .TP
-.B \-s
-Single run.  By default \fB\*p\fR will check and execute on a per pool
-basis.
-This option will instead check all disks across all pools in scope and
-execute \fICOMMAND\fR just once if there are no disks in standby/sleep.
+.B \-p
+Check each pool separately and run \fICOMMAND\fR once per pool.
+If using this option, use token \fB\*t\fR (see \fICOMMAND\fR parameter)
+to update \fICOMMAND\fR for each run, otherwise the command will be
+repeated identically for each and every pool.
+.IP
+Without this option \fB\*p\fR will check all disks across all pools in
+scope and then execute \fICOMMAND\fR once if there are no disks in
+standby/sleep.
+.TP
+.B \-u
+Force an update of any cached device information.
+See DEVICE CACHE section for more details.
 .TP
 .B \-v
-Verbose mode.  Report warnings and information.  By default this
-utility will only report errors.
+Verbose mode.  Report warnings and information.  By default only errors
+are reported.
 .TP
 .B \-vv
 Very verbose.  Report debugging messages.
 .TP
-.B \-p\fR \fIPOOL
-Specify a pool to check, otherwise all available pools are included by
-default.
-Repeat this option to specify more than one pool.
-Any pools specified that are unavailable will be ignored.
+.B \-i\fR \fIPOOL
+Include a pool.
+Repeat this option to specify multiple pools.
+Any pools that are unavailable will be ignored.
 A warning is given if none of the pools are available.
+Omit this option to include all pools.
 .TP
 .B \-x\fR \fIPOOL
 Exclude a pool.
-Repeat this option to specify more than one pool to exclude.
+Repeat this option to specify multiple pools.
 .TP
 .I COMMAND
 Command to execute if no hard drives in the pool(s) are in standby or
 sleep modes.
 .IP
-Optionally, use the token \fB\*t\fR one or more times in the command's
-arguments to have \fB\*p\fR insert the pool scope when running the
-command.
-If using \fB\*p -s\fR this will be a list of all available specified
-pools, otherwise this will be the name of each pool as \fB\*p\fR
-iterates through them.
+Use the substitution token \fB\*t\fR in the command arguments to make
+\fB\*p\fR insert the pool scope when running the command.
+The token may be used multiple times if required.
+If using \fB\*p -p\fR this will be the name of each pool as \fB\*p\fR
+iterates through them, otherwise this will be a list of all pools
+included.
 .SH EXAMPLES
 To use
 .BR zfs-auto-snapshot (8)
@@ -56,7 +64,7 @@ without waking up any sleeping hard drives:
 .PP
 .nf
 .RS
-\*p zfs-auto-snapshot -qg -l frequent -k 4 \*t
+\*p -p zfs-auto-snapshot -qg -l frequent -k 4 \*t
 .RE
 .fi
 .PP
@@ -64,11 +72,37 @@ To test \fB\*p\fR on all currently available pools:
 .PP
 .nf
 .RS
-\*p -v echo \*t
+\*p -pv echo \*t
 .RE
 .fi
 .PP
+To refresh the \fB\*p\fR device information cache without otherwise
+executing any command:
+.PP
+.nf
+.RS
+\*p -u :
+.RE
+.fi
+.PP
+.SH DEVICE CACHE
+Device information is cached to avoid unnecessary calls to ZFS
+utilities which can cause sleeping drives to wake up.
+The default location for the device information cache is:
+\fB\*c\fR
+.PP
+Ideally this should be on a device that is not subject to spin-down.
+To change this location, edit the export variable ZZZRUNCACHE in
+/etc/profile.d/zzzrun.sh
+.PP
+As block device names can change between boots, a systemd unit is set up
+by the zzzrun installer to reset the device cache at boot time. 
 .SH LIMITATIONS
+There is currently no mechanism in place to detect pool changes (e.g. 
+from \fBzpool import\fR or \fBzpool export\fR commands) to automatically
+invalidate the cache, so to avoid errors in these situations, run
+\fB\*p -u :\fR afterwards.
+.PP
 Hard drives that are connected to the host via USB may report their power
 state incorrectly to \fBhdparm -C\fR.
 USB drives that appear to hdparm to be in standby when they are not will

@@ -1,0 +1,9 @@
+[Unit]
+Description=Reset zzzrun cache
+
+[Service]
+ExecStart=/usr/local/bin/zzzrun-reset
+Type=oneshot
+
+[Install]
+WantedBy=multi-user.target

@@ -1,4 +1,4 @@
 PATH="/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin"
 
 # Only call zfs-auto-snapshot if it is available, and only for pools with disks not in standby
-*/15 * * * * root which zfs-auto-snapshot > /dev/null && zzzrun "zfs-auto-snapshot -q -g --label=frequent --keep=4 @zzzrun-pool"
+*/15 * * * * root which zfs-auto-snapshot > /dev/null && zzzrun -p "zfs-auto-snapshot -q -g --label=frequent --keep=4 @zzzrun-pool"
